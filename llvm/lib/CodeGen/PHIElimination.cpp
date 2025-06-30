@@ -584,9 +584,13 @@ void PHIEliminationImpl::LowerPHINode(MachineBasicBlock &MBB,
     // Reuse an existing copy in the block if possible.
     if (IncomingReg.isVirtual()) {
       MachineInstr *DefMI = MRI->getUniqueVRegDef(SrcReg);
+      const TargetRegisterClass *RC1 = MRI->getRegClass(SrcReg);
+      const TargetRegisterClass *RC2 = MRI->getRegClass(IncomingReg);
       if (DefMI && DefMI->isCopy() && DefMI->getParent() == &opBlock &&
-          MRI->use_empty(SrcReg)) {
+          MRI->use_empty(SrcReg) && RC2->hasSuperClassEq(RC1)) {
         DefMI->getOperand(0).setReg(IncomingReg);
+        if (LV)
+          LV->getVarInfo(SrcReg).AliveBlocks.clear();
         continue;
       }
     }
